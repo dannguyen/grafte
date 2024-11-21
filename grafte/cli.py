@@ -7,7 +7,7 @@ import pandas as pd
 
 from typing import List, Optional
 
-import grafte.chart as txchart
+import grafte
 
 
 class DefaultRichGroup(DefaultGroup, RichGroup):
@@ -63,6 +63,14 @@ def common_var_options(func):
             show_default=False,
             type=click.STRING,
         ),
+        click.option(
+            "--cvar",
+            "-c",
+            help="The name of the column to use as the series variable. If blank, data is assumed to be single-series",
+            required=False,
+            show_default=False,
+            type=click.STRING,
+        ),
     ]
     for o in options:
         func = o(func)
@@ -92,20 +100,28 @@ def read_input_file(input_file, infer=True) -> (List[dict], List[str]):
 
 
 def chart_command(
-    TheChart: txchart.Chart, input_file, output_file, infer, xvar, yvar, quiet
+    TheChart: grafte.charts.Chart,
+    input_file,
+    output_file,
+    infer,
+    xvar,
+    yvar,
+    cvar,
+    quiet,
+    **kwargs,
 ):
 
     data, headers = read_input_file(input_file, infer)
     xvar, yvar = process_headers(headers, xvar, yvar)
 
-    chart = TheChart(data, xvar=xvar, yvar=yvar)
+    chart = TheChart(data, xvar=xvar, yvar=yvar, cvar=cvar, **kwargs)
 
     chart.render()
     if output_file:
         chart.save(output_file)
 
     if not quiet:
-        chart.show()
+        chart.draw()
 
 
 @click.version_option()
@@ -116,26 +132,62 @@ def cli():
 
 @cli.command()
 @common_var_options
-def bar(input_file, output_file, infer, xvar, yvar, quiet):
+@click.option(
+    "-g",
+    "--group_style",
+    help="Type of grouping",
+    required=False,
+    show_default=True,
+    default="grouped",
+    type=click.Choice(["grouped", "stacked"]),
+)
+def bar(input_file, output_file, infer, xvar, yvar, cvar, quiet, group_style):
     """
     Make a bar chart
     """
-    chart_command(txchart.Bar, input_file, output_file, infer, xvar, yvar, quiet)
+    chart_command(
+        grafte.Bar,
+        input_file,
+        output_file,
+        infer,
+        xvar,
+        yvar,
+        cvar,
+        quiet,
+        group_style=group_style,
+    )
 
 
 @cli.command()
 @common_var_options
-def line(input_file, output_file, infer, xvar, yvar, quiet):
+def line(input_file, output_file, infer, xvar, yvar, cvar, quiet):
     """
     Make a line chart
     """
-    chart_command(txchart.Line, input_file, output_file, infer, xvar, yvar, quiet)
+    chart_command(grafte.Line, input_file, output_file, infer, xvar, yvar, cvar, quiet)
 
 
 @cli.command()
 @common_var_options
-def scatter(input_file, output_file, infer, xvar, yvar, quiet):
+@click.option(
+    "--size",
+    help="The name of the column to use for the dot-size variable, if applicable",
+    required=False,
+    show_default=False,
+    type=click.STRING,
+)
+def scatter(input_file, output_file, infer, xvar, yvar, cvar, quiet, size):
     """
     Make a scatterplot
     """
-    chart_command(txchart.Scatter, input_file, output_file, infer, xvar, yvar, quiet)
+    chart_command(
+        grafte.Scatter,
+        input_file,
+        output_file,
+        infer,
+        xvar,
+        yvar,
+        cvar,
+        quiet,
+        sizevar=size,
+    )

@@ -2,7 +2,7 @@ import os
 import pytest
 from PIL import Image  # Pillow library for opening and inspecting image files
 from pathlib import Path
-from grafte.chart import Bar
+from grafte import Bar
 
 import csv
 from io import StringIO, BytesIO
